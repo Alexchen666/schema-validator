@@ -63,10 +63,15 @@ def parse_yaml(path: str) -> DataSchema:
     for col_name, col_def in raw["columns"].items():
         columns.append(_parse_column(col_name, col_def))
 
+    relationships = []
+    for rel_raw in raw.get("relationships", []):
+        relationships.append(_parse_relationship(rel_raw))
+
     return DataSchema(
         name=raw["name"],
         version=raw["version"],
         columns=columns,
+        relationships=relationships,
     )
 
 

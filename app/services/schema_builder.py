@@ -2,7 +2,7 @@ import operator as op
 
 import numpy as np
 import pandas as pd
-import pandera as pa
+import pandera.pandas as pa
 from pandera import Check, Column, DataFrameSchema
 
 from app.services.yaml_parser import (
@@ -13,11 +13,16 @@ from app.services.yaml_parser import (
 )
 
 TYPE_MAP = {
-    "int": pa.Int,  # type: ignore
-    "float": pa.Float,  # type: ignore
-    "str": pa.String,  # type: ignore
-    "bool": pa.Bool,  # type: ignore
-    "datetime": pa.DateTime,  # type: ignore
+    "int": pa.Int,
+    "float": pa.Float,
+    "str": pa.String,
+    "bool": pa.Bool,
+    "datetime": pa.DateTime,
+}
+
+# Nullable-safe equivalents for types that suffer from float upcast
+NULLABLE_TYPE_MAP = {
+    "int": pd.Int64Dtype(),
 }
 
 OPERATOR_MAP = {
@@ -55,7 +60,11 @@ def build_pandera_schema(data_schema: DataSchema) -> DataFrameSchema:
 
 
 def _build_column(col: ColumnSchema) -> Column:
-    pa_type = TYPE_MAP.get(col.type)
+    if col.nullable and col.type in NULLABLE_TYPE_MAP:
+        pa_type = NULLABLE_TYPE_MAP[col.type]
+    else:
+        pa_type = TYPE_MAP.get(col.type)
+
     if pa_type is None:
         raise SchemaBuilderError(
             f"Cannot map type '{col.type}' to Pandera type"
@@ -68,6 +77,15 @@ def _build_column(col: ColumnSchema) -> Column:
         nullable=col.nullable,
         unique=col.unique,
         checks=checks if checks else None,
+        # coerce=True is intentional. When a nullable integer column contains
+        # None, pandas internally upcasts it to float64. Without coercion,
+        # Pandera would reject this as a dtype mismatch even though the values
+        # are semantically valid integers. Setting coerce=True lets Pandera
+        # cast float64 → Int64 before validation, preserving the intended
+        # behaviour. Trade-off: Pandera will silently cast other type
+        # mismatches too, so strict dtype enforcement is delegated to the
+        # YAML schema config rather than the DataFrame's incoming dtype.
+        coerce=True
     )
 
 
