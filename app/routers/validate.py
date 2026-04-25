@@ -68,4 +68,22 @@ async def validate_file(
     db.add(history_record)
     db.commit()
 
-    return report
+    return {
+        "status": report.status,
+        "schema_name": report.schema_name,
+        "schema_version": report.schema_version,
+        "total_rows": report.total_rows,
+        "valid_rows": report.valid_rows,
+        "invalid_rows": report.invalid_rows,
+        "error_count": report.error_count,
+        "message": report.message,
+        "errors": [
+            {
+                "column": e.column,
+                "row": e.row,
+                "value": str(e.value) if e.value is not None else None,
+                "reason": e.reason,
+            }
+            for e in report.errors
+        ],
+    }

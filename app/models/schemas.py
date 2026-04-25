@@ -30,6 +30,8 @@ class ValidationErrorResponse(BaseModel):
     value: Optional[str]  # str to safely serialise any value type
     reason: Optional[str]
 
+    class Config:
+        from_attributes = True
 
 class ValidationReportResponse(BaseModel):
     status: str
