@@ -41,7 +41,8 @@ columns:
     type: int
     nullable: false
     constraints:
-      allowed_values: ["12", "24", "36", "48", "60"]
+      min: 12
+      max: 60
 
   interest_rate:
     type: float
