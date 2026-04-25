@@ -11,3 +11,7 @@ wheels/
 
 # Mac files
 .DS_Store
+
+# Programme files
+.env
+*.db
