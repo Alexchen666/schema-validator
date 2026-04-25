@@ -1,0 +1,6 @@
+application_id,applicant_name,age,employment_status,annual_income,loan_amount,loan_term_months,interest_rate,collateral_value,credit_score,email
+1,Alice Chen,35,employed,120000.0,50000.0,36,0.05,,720,alice@example.com
+2,Bob Smith,52,self_employed,85000.0,200000.0,60,0.07,250000.0,780,bob@example.com
+3,Carol Wu,28,employed,65000.0,30000.0,24,0.08,,690,carol@example.com
+4,David Lee,61,retired,45000.0,20000.0,12,0.06,,700,david@example.com
+5,Eva Brown,44,employed,200000.0,150000.0,48,0.045,200000.0,810,eva@example.com

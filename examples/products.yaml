@@ -1,0 +1,30 @@
+version: "1.0"
+name: products
+
+columns:
+  product_id:
+    type: int
+    nullable: false
+    unique: true
+
+  product_name:
+    type: str
+    nullable: false
+
+  category:
+    type: str
+    nullable: false
+    constraints:
+      allowed_values: [electronics, clothing, food, furniture]
+
+  price:
+    type: float
+    nullable: false
+    constraints:
+      min: 0.0
+
+  stock_quantity:
+    type: int
+    nullable: false
+    constraints:
+      min: 0

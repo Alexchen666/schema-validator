@@ -1,0 +1,7 @@
+product_id,product_name,category,price,stock_quantity
+1,Laptop,electronics,999.99,50
+2,T-Shirt,apparel,29.99,200
+3,Coffee Beans,food,-5.00,100
+4,Desk,furniture,349.99,-10
+1,Monitor,electronics,399.99,75
+6,,electronics,199.99,30

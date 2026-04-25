@@ -1,0 +1,24 @@
+version: "1.0"
+name: employees_simple
+
+columns:
+  employee_id:
+    type: int
+    nullable: false
+    unique: true
+
+  full_name:
+    type: str
+    nullable: false
+
+  department:
+    type: str
+    nullable: false
+
+  salary:
+    type: float
+    nullable: true
+
+  is_active:
+    type: bool
+    nullable: false

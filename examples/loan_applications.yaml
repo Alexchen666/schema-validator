@@ -1,0 +1,84 @@
+version: "1.0"
+name: loan_applications
+
+columns:
+  application_id:
+    type: int
+    nullable: false
+    unique: true
+
+  applicant_name:
+    type: str
+    nullable: false
+
+  age:
+    type: int
+    nullable: false
+    constraints:
+      min: 18
+      max: 80
+
+  employment_status:
+    type: str
+    nullable: false
+    constraints:
+      allowed_values: [employed, self_employed, retired]
+
+  annual_income:
+    type: float
+    nullable: false
+    constraints:
+      min: 0.0
+
+  loan_amount:
+    type: float
+    nullable: false
+    constraints:
+      min: 1000.0
+      max: 500000.0
+
+  loan_term_months:
+    type: int
+    nullable: false
+    constraints:
+      allowed_values: ["12", "24", "36", "48", "60"]
+
+  interest_rate:
+    type: float
+    nullable: false
+    constraints:
+      min: 0.01
+      max: 0.30
+
+  collateral_value:
+    type: float
+    nullable: true
+    constraints:
+      min: 0.0
+
+  credit_score:
+    type: int
+    nullable: false
+    constraints:
+      min: 300
+      max: 850
+
+  email:
+    type: str
+    nullable: false
+    constraints:
+      regex: '^[\w\.-]+@[\w\.-]+\.\w+$'
+
+relationships:
+  # Loan amount must not exceed 5x annual income
+  - description: "loan_amount must not exceed 5x annual_income"
+    expression: "loan_amount <= annual_income * 5"
+
+  # Collateral must cover at least the loan amount when provided
+  - description: "collateral_value must be >= loan_amount when provided"
+    expression: "collateral_value.fillna(loan_amount) >= loan_amount"
+
+  # Higher loan amounts require better credit scores:
+  # loan_amount > 100000 requires credit_score > 650
+  - description: "loan_amount > 100000 requires credit_score > 650"
+    expression: "~(loan_amount > 100000) | (credit_score > 650)"

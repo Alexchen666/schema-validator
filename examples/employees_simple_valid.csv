@@ -1,0 +1,6 @@
+employee_id,full_name,department,salary,is_active
+1,Alice Chen,Engineering,95000.0,true
+2,Bob Smith,Marketing,72000.0,true
+3,Carol Wu,Engineering,105000.0,true
+4,David Lee,HR,68000.0,false
+5,Eva Brown,Marketing,,true
