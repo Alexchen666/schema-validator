@@ -1,8 +1,6 @@
-import operator as op
-
-import numpy as np
 import pandas as pd
 import pandera.pandas as pa
+from asteval import Interpreter
 from pandera import Check, Column, DataFrameSchema
 
 from app.services.yaml_parser import (
@@ -25,24 +23,6 @@ NULLABLE_TYPE_MAP = {
     "int": pd.Int64Dtype(),
 }
 
-OPERATOR_MAP = {
-    ">": op.gt,
-    ">=": op.ge,
-    "<": op.lt,
-    "<=": op.le,
-    "==": op.eq,
-    "!=": op.ne,
-}
-
-TRANSFORM_MAP = {
-    "square": lambda col: col**2,
-    "sqrt": lambda col: np.sqrt(col),
-    "abs": lambda col: col.abs(),
-    "log": lambda col: np.log(col),
-    "negate": lambda col: -col,
-    "pow": None,  # handled separately, needs transform_arg
-}
-
 
 class SchemaBuilderError(Exception):
     pass
@@ -53,7 +33,7 @@ def build_pandera_schema(data_schema: DataSchema) -> DataFrameSchema:
 
     # Relationship checks are DataFrame-level, not column-level
     df_checks = [
-        _build_structured_check(rel) for rel in data_schema.relationships
+        _build_expression_check(rel) for rel in data_schema.relationships
     ]
 
     return DataFrameSchema(columns, checks=df_checks if df_checks else None)
@@ -108,30 +88,27 @@ def _build_checks(constraints: ColumnConstraints) -> list[Check]:
     return checks
 
 
-def _build_structured_check(rel: ColumnRelationship) -> pa.Check:
-    left_col = rel.left
-    right_col = rel.right.column # type: ignore
-    transform = rel.right.transform # type: ignore
-    transform_arg = rel.right.transform_arg # type: ignore
-    comparator = OPERATOR_MAP[rel.operator]
+def _build_expression_check(rel: ColumnRelationship) -> Check:
+    expression = rel.expression
+    description = rel.description
 
     def check_fn(df: pd.DataFrame) -> pd.Series:
-        left = df[left_col]
-        right = df[right_col]
+        aeval = Interpreter()
+        # Only expose DataFrame columns — no builtins, no imports
+        for col in df.columns:
+            aeval.symtable[col] = df[col]
 
-        if transform == "pow":
-            if transform_arg is None:
-                raise SchemaBuilderError(
-                    "'pow' transform requires 'transform_arg'"
-                )
-            right = right**transform_arg
-        elif transform:
-            right = TRANSFORM_MAP[transform](right) # type: ignore
+        result = aeval(expression)
 
-        return comparator(left, right)
+        if aeval.error:
+            raise SchemaBuilderError(
+                f"Expression evaluation failed for '{description}': "
+                f"{aeval.error_msg}"
+            )
+        return result
 
-    return pa.Check(
+    return Check(
         check_fn,
         element_wise=False,
-        error=rel.description,
+        error=description,
     )

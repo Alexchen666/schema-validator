@@ -22,18 +22,9 @@ class ColumnSchema:
 
 
 @dataclass
-class RightOperand:
-    column: str
-    transform: Optional[str] = None
-    transform_arg: Optional[float] = None  # used for pow: N
-
-
-@dataclass
 class ColumnRelationship:
     description: str
-    left: Optional[str] = None
-    operator: Optional[str] = None
-    right: Optional[RightOperand] = None
+    expression: str
 
 
 @dataclass
@@ -49,8 +40,6 @@ class YAMLParseError(Exception):
 
 
 SUPPORTED_TYPES = {"int", "float", "str", "bool", "datetime"}
-SUPPORTED_OPERATORS = {">", ">=", "<", "<=", "==", "!="}
-SUPPORTED_TRANSFORMS = {"square", "sqrt", "abs", "log", "negate", "pow"}
 
 
 def parse_yaml(path: str) -> DataSchema:
@@ -142,37 +131,16 @@ def _parse_constraints(
 
 
 def _parse_relationship(raw: dict) -> ColumnRelationship:
-    for key in ("left", "operator", "right"):
-        if key not in raw:
-            raise YAMLParseError(
-                f"Relationship missing required field: '{key}'"
-            )
-
-    operator = raw["operator"]
-    if operator not in SUPPORTED_OPERATORS:
+    if "expression" not in raw:
         raise YAMLParseError(
-            f"Unsupported operator '{operator}'. "
-            f"Supported: {SUPPORTED_OPERATORS}"
+            "Relationship is missing required field 'expression'. "
+            'Hint: use expression form e.g. "loan_amount <= annual_income * 5"'
         )
-
-    right_raw = raw["right"]
-    if "column" not in right_raw:
-        raise YAMLParseError("Relationship 'right' must specify a 'column'")
-
-    transform = right_raw.get("transform")
-    if transform and transform not in SUPPORTED_TRANSFORMS:
+    if "description" not in raw:
         raise YAMLParseError(
-            f"Unsupported transform '{transform}'. "
-            f"Supported: {SUPPORTED_TRANSFORMS}"
+            "Relationship is missing required field 'description'"
         )
-
     return ColumnRelationship(
-        description=raw.get("description", ""),
-        left=raw["left"],
-        operator=operator,
-        right=RightOperand(
-            column=right_raw["column"],
-            transform=transform,
-            transform_arg=right_raw.get("transform_arg"),
-        ),
+        description=raw["description"],
+        expression=raw["expression"],
     )
