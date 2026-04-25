@@ -43,9 +43,7 @@ def relationship_schema(tmp_path):
         "relationships": [
             {
                 "description": "revenue must exceed cost squared",
-                "left": "revenue",
-                "operator": ">",
-                "right": {"column": "cost", "transform": "square"},
+                "expression": "revenue > cost ** 2",
             }
         ],
     }

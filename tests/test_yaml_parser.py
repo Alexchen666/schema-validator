@@ -10,8 +10,6 @@ from app.services.yaml_parser import (
 )
 
 # --- Fixtures ---
-
-
 def write_yaml(data: dict) -> str:
     """Helper: writes a dict to a temp YAML file and returns the path."""
     tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False)
@@ -62,9 +60,7 @@ def relationship_yaml(tmp_path):
         "relationships": [
             {
                 "description": "revenue > cost squared",
-                "left": "revenue",
-                "operator": ">",
-                "right": {"column": "cost", "transform": "square"},
+                "expression": "revenue > cost ** 2",
             }
         ],
     }
@@ -74,8 +70,6 @@ def relationship_yaml(tmp_path):
 
 
 # --- Top-level structure ---
-
-
 class TestTopLevelValidation:
     def test_valid_yaml_parses_successfully(self, valid_yaml):
         schema = parse_yaml(valid_yaml)
@@ -113,8 +107,6 @@ class TestTopLevelValidation:
 
 
 # --- Column parsing ---
-
-
 class TestColumnParsing:
     def test_columns_parsed_correctly(self, valid_yaml):
         schema = parse_yaml(valid_yaml)
@@ -161,8 +153,6 @@ class TestColumnParsing:
 
 
 # --- Constraints ---
-
-
 class TestConstraintParsing:
     def test_min_max_parsed(self, valid_yaml):
         schema = parse_yaml(valid_yaml)
@@ -222,62 +212,64 @@ class TestConstraintParsing:
 
 
 # --- Relationships ---
-
-
 class TestRelationshipParsing:
     def test_structured_relationship_parsed(self, relationship_yaml):
         schema = parse_yaml(relationship_yaml)
         assert len(schema.relationships) == 1
         rel = schema.relationships[0]
-        assert rel.left == "revenue"
-        assert rel.operator == ">"
-        assert rel.right.column == "cost" # type: ignore
-        assert rel.right.transform == "square" # type: ignore
+        assert rel.description == "revenue > cost squared"
+        assert rel.expression == "revenue > cost ** 2"
 
     def test_unsupported_operator_raises(self, tmp_path):
         data = {
-            "name": "s",
-            "version": "1.0",
-            "columns": {
-                "a": {"type": "int"},
-                "b": {"type": "int"},
-            },
-            "relationships": [
-                {
-                    "description": "test",
-                    "left": "a",
-                    "operator": ">>",
-                    "right": {"column": "b"},
-                }
-            ],
-        }
-        path = tmp_path / "schema.yaml"
-        path.write_text(yaml.dump(data))
-        with pytest.raises(YAMLParseError, match="operator"):
-            parse_yaml(str(path))
-
-    def test_unsupported_transform_raises(self, tmp_path):
-        data = {
-            "name": "s",
-            "version": "1.0",
+            "name": "s", "version": "1.0",
             "columns": {
                 "a": {"type": "float"},
                 "b": {"type": "float"},
             },
             "relationships": [
-                {
-                    "description": "test",
-                    "left": "a",
-                    "operator": ">",
-                    "right": {"column": "b", "transform": "cube"},
-                }
+                {"description": "missing expression field"}
             ],
         }
         path = tmp_path / "schema.yaml"
         path.write_text(yaml.dump(data))
-        with pytest.raises(YAMLParseError, match="transform"):
+        with pytest.raises(YAMLParseError, match="expression"):
+            parse_yaml(str(path))
+
+    def test_missing_description_raises(self, tmp_path):
+        data = {
+            "name": "s", "version": "1.0",
+            "columns": {
+                "a": {"type": "float"},
+                "b": {"type": "float"},
+            },
+            "relationships": [
+                {"expression": "a > b"}
+            ],
+        }
+        path = tmp_path / "schema.yaml"
+        path.write_text(yaml.dump(data))
+        with pytest.raises(YAMLParseError, match="description"):
             parse_yaml(str(path))
 
     def test_no_relationships_defaults_to_empty_list(self, valid_yaml):
         schema = parse_yaml(valid_yaml)
         assert schema.relationships == []
+
+    def test_multiple_relationships_parsed(self, tmp_path):
+        data = {
+            "name": "s", "version": "1.0",
+            "columns": {
+                "a": {"type": "float"},
+                "b": {"type": "float"},
+                "c": {"type": "float"},
+            },
+            "relationships": [
+                {"description": "a > b", "expression": "a > b"},
+                {"description": "b > c", "expression": "b > c"},
+            ],
+        }
+        path = tmp_path / "schema.yaml"
+        path.write_text(yaml.dump(data))
+        schema = parse_yaml(str(path))
+        assert len(schema.relationships) == 2
