@@ -1,7 +1,7 @@
 [project]
 name = "schema-validator"
-version = "0.1.0"
-description = "Add your description here"
+version = "1.0.0"
+description = "A REST API for validating CSV data against YAML-configured schemas. Define column types, constraints, and cross-column relationships in a YAML file — no Python code required."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
